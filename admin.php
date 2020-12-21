@@ -295,7 +295,7 @@ $app->get("/forgot/reset", function(){
 
 $app->post("/forgot/reset", function(){
 
-	$forgot = User::validForgotDecrypt($_POST["code"]);	
+	$forgot = User::validForgotDecrypt($_POST["code"]);
 
 	User::setFogotUsed($forgot["idrecovery"]);
 
