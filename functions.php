@@ -12,6 +12,13 @@ function formatPrice($vlprice)
 
 }
 
+function formatDate($date)
+{
+
+	return date('d/m/Y', strtotime($date));
+
+}
+
 function checkLogin($inadmin = true)
 {
 
@@ -28,23 +35,26 @@ function getUserName()
 
 }
 
-function getCartNrQtd() {
+function getCartNrQtd()
+{
 
 	$cart = Cart::getFromSession();
 
 	$totals = $cart->getProductsTotals();
 
-	return ($totals['nrqtd']);
+	return $totals['nrqtd'];
+
 }
 
-
-function getCartVlSubTotal() {
+function getCartVlSubTotal()
+{
 
 	$cart = Cart::getFromSession();
 
 	$totals = $cart->getProductsTotals();
 
 	return formatPrice($totals['vlprice']);
+
 }
 
  ?>
