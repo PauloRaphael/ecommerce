@@ -2,68 +2,10 @@
 
 use \Hcode\PageAdmin;
 use \Hcode\Model\User;
+use \Hcode\Model\Category;
+use \Hcode\Model\Product;
 
-$app->get("/admin/users/:iduser/password", function($iduser){
-
-	User::verifyLogin();
-
-	$user = new User();
-
-	$user->get((int)$iduser);
-
-	$page = new PageAdmin();
-
-	$page->setTpl("users-password", [
-		"user"=>$user->getValues(),
-		"msgError"=>User::getError(),
-		"msgSuccess"=>User::getSuccess()
-	]);
-
-});
-
-$app->post("/admin/users/:iduser/password", function($iduser){
-
-	User::verifyLogin();
-
-	if (!isset($_POST['despassword']) || $_POST['despassword']==='') {
-
-		User::setError("Preencha a nova senha.");
-		header("Location: /admin/users/$iduser/password");
-		exit;
-
-	}
-
-	if (!isset($_POST['despassword-confirm']) || $_POST['despassword-confirm']==='') {
-
-		User::setError("Preencha a confirmação da nova senha.");
-		header("Location: /admin/users/$iduser/password");
-		exit;
-
-	}
-
-	if ($_POST['despassword'] !== $_POST['despassword-confirm']) {
-
-		User::setError("Confirme corretamente as senhas.");
-		header("Location: /admin/users/$iduser/password");
-		exit;
-
-	}
-
-	$user = new User();
-
-	$user->get((int)$iduser);
-
-	$user->setPassword(User::getPasswordHash($_POST['despassword']));
-
-	User::setSuccess("Senha alterada com sucesso.");
-
-	header("Location: /admin/users/$iduser/password");
-	exit;
-
-});
-
-
-$app->get("/admin/users", function() {
+$app->get("/admin/categories", function(){
 
 	User::verifyLogin();
 
@@ -72,11 +14,11 @@ $app->get("/admin/users", function() {
 
 	if ($search != '') {
 
-		$pagination = User::getPageSearch($search, $page);
+		$pagination = Category::getPageSearch($search, $page);
 
 	} else {
 
-		$pagination = User::getPage($page);
+		$pagination = Category::getPage($page);
 
 	}
 
@@ -97,89 +39,140 @@ $app->get("/admin/users", function() {
 
 	$page = new PageAdmin();
 
-	$page->setTpl("users", array(
-		"users"=>$pagination['data'],
+	$page->setTpl("categories", [
+		"categories"=>$pagination['data'],
 		"search"=>$search,
 		"pages"=>$pages
-	));
+	]);	
+
 
 });
 
-$app->get("/admin/users/create", function() {
+$app->get("/admin/categories/create", function(){
 
 	User::verifyLogin();
 
 	$page = new PageAdmin();
 
-	$page->setTpl("users-create");
+	$page->setTpl("categories-create");	
 
 });
 
-$app->get("/admin/users/:iduser/delete", function($iduser) {
+$app->post("/admin/categories/create", function(){
 
-	User::verifyLogin();	
+	User::verifyLogin();
 
-	$user = new User();
+	$category = new Category();
 
-	$user->get((int)$iduser);
+	$category->setData($_POST);
 
-	$user->delete();
+	$category->save();
 
-	header("Location: /admin/users");
+	header('Location: /admin/categories');
 	exit;
 
 });
 
-$app->get("/admin/users/:iduser", function($iduser) {
+$app->get("/admin/categories/:idcategory/delete", function($idcategory){
 
 	User::verifyLogin();
 
-	$user = new User();
+	$category = new Category();
 
-	$user->get((int)$iduser);
+	$category->get((int)$idcategory);
+
+	$category->delete();
+
+	header('Location: /admin/categories');
+	exit;
+
+});
+
+$app->get("/admin/categories/:idcategory", function($idcategory){
+
+	User::verifyLogin();
+
+	$category = new Category();
+
+	$category->get((int)$idcategory);
 
 	$page = new PageAdmin();
 
-	$page->setTpl("users-update", array(
-		"user"=>$user->getValues()
-	));
+	$page->setTpl("categories-update", [
+		'category'=>$category->getValues()
+	]);	
 
 });
 
-$app->post("/admin/users/create", function() {
+$app->post("/admin/categories/:idcategory", function($idcategory){
 
 	User::verifyLogin();
 
-	$user = new User();
+	$category = new Category();
 
-	$_POST["inadmin"] = (isset($_POST["inadmin"]))?1:0;
+	$category->get((int)$idcategory);
 
-	$_POST['despassword'] = User::getPasswordHash($_POST['despassword']);
+	$category->setData($_POST);
 
-	$user->setData($_POST);
+	$category->save();	
 
-	$user->save();
-
-	header("Location: /admin/users");
+	header('Location: /admin/categories');
 	exit;
 
 });
 
-$app->post("/admin/users/:iduser", function($iduser) {
+$app->get("/admin/categories/:idcategory/products", function($idcategory){
 
 	User::verifyLogin();
 
-	$user = new User();
+	$category = new Category();
 
-	$_POST["inadmin"] = (isset($_POST["inadmin"]))?1:0;
+	$category->get((int)$idcategory);
 
-	$user->get((int)$iduser);
+	$page = new PageAdmin();
 
-	$user->setData($_POST);
+	$page->setTpl("categories-products", [
+		'category'=>$category->getValues(),
+		'productsRelated'=>$category->getProducts(),
+		'productsNotRelated'=>$category->getProducts(false)
+	]);
 
-	$user->update();	
+});
 
-	header("Location: /admin/users");
+$app->get("/admin/categories/:idcategory/products/:idproduct/add", function($idcategory, $idproduct){
+
+	User::verifyLogin();
+
+	$category = new Category();
+
+	$category->get((int)$idcategory);
+
+	$product = new Product();
+
+	$product->get((int)$idproduct);
+
+	$category->addProduct($product);
+
+	header("Location: /admin/categories/".$idcategory."/products");
+	exit;
+
+});
+
+$app->get("/admin/categories/:idcategory/products/:idproduct/remove", function($idcategory, $idproduct){
+
+	User::verifyLogin();
+
+	$category = new Category();
+
+	$category->get((int)$idcategory);
+
+	$product = new Product();
+
+	$product->get((int)$idproduct);
+
+	$category->removeProduct($product);
+
+	header("Location: /admin/categories/".$idcategory."/products");
 	exit;
 
 });
